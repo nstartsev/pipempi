@@ -1,0 +1,8 @@
+ 1.e-2    - tol
+ 20        - kprt
+ 500.       - kwrt
+2900.       - tmax
+ 0.1         - dtmax
+TestRun.cp
+tt.cp
+a0.dat
