@@ -32,6 +32,7 @@
 *
       call MPI_REDUCE(u0s(1),u0(1),Jm,MPI_DOUBLE_PRECISION,MPI_SUM,0
      >               ,MPI_COMM_WORLD,ier)
+      call MPI_BCAST(u0(1),Jm,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ier)
       Dp=p(0,0,0)
       ubulk=0.
       Ss=0.
@@ -40,14 +41,14 @@
 *
       do j=1,Jm
         Ss=Ss+yt(j)*yt1(j)
-        ! u0=0.
+        u01=0.
         do k=1,Km
           ubulk=ubulk+u(1,j,k)*yt(j)*yt1(j)
-          ! do i=1,Im
-          !   u0=u0+u(i,j,k)
-          ! end do
+          do i=1,Im
+            u01=u01+u(i,j,k)
+          end do
         end do
-        ! u0=u0/(Im*Km)
+        u01=u01/(Im*Km)
         do k=1,Km
           do i=1,Im
             amp=amp
@@ -96,10 +97,41 @@
         w3=w(i,j3,k)
         write(8,120)t,dt,Dp,amp,ucl,dds,u1,u2,u3,v1,v2,v3,w1,w2,w3
 *        write(8,120)t,dt,Dp,amp,ucl,dds
-        write(*,110)Dp,amp,ucl,dds
+        write(*,110) t, Dp,amp,ucl,dds
+        amp = 0.d0
       end if 
 120   format(1pe14.6,15e12.4)
-110   format('    Dp =',1pe12.4,'  amp =',e12.4,'  Ucl =',e12.4,
-     >       '  Div =',e12.4)
+110   format('t=  ', 1pe12.4, '    Dp =',1pe12.4,'  amp =',e12.4,
+     >      '  Ucl =',e12.4, '  Div =',e12.4)
       return
       end
+      subroutine calc_amp(u,v,w, amp, Imax, Jmax)
+        implicit real*8 (a-h,o-z)
+        dimension
+     > u(0:Imax,0:Jmax,0:*)
+     >,v(0:Imax,0:Jmax,0:*)
+     >,w(0:Imax,0:Jmax,0:*)
+        common
+     >/dimx/hx,Im,lx
+     >/dimr/rt(0:128),rt1(0:128),yt(129),yt1(129),hr,Jm
+     >/dimt/ht,Km,lt
+        amp = 0.d0
+        Ss = 0.d0
+        do j=1,Jm
+          u0=0.
+          Ss=Ss+yt(j)*yt1(j)
+          do k=1,Km
+            do i=1,Im
+              u0 = u0 + u(i,j,k)
+            end do
+          end do
+          u0 = u0/(Im*Km)
+          do k = 1, Km
+            do i = 1, Im
+              amp = amp + 
+     >          ((u(i,j,k)-u0)**2+w(i,j,k)**2+v(i,j,k)**2)*yt(j)*yt1(j)
+            end do
+          end do
+        end do
+        amp = sqrt(amp/(Im*Ss*Km))
+        end

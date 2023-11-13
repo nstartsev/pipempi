@@ -1,5 +1,5 @@
 *
-*     program an
+      program pipe
       implicit real*8 (a-h,o-z)
       include 'mpif.h'
       parameter (Imax=129, Jmax=129, Kmax=129)
@@ -222,4 +222,4 @@
       istop=1
       goto 222
 100   format(10(1pe12.4))
-      end
+      end program pipe

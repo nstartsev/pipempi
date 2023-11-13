@@ -1,5 +1,5 @@
 *
-*     program an
+       program init
       implicit real*8 (a-h,o-z)
       parameter (Imax=513, Jmax=65, Kmax=129)
       character*12 fncp,fndat
@@ -74,7 +74,7 @@
       amp_prev = 0.
       call calc_amp(u1,v1,w1,amp_prev, Imax, Jmax)
       write(*,*) "amp= ", amp_prev
-      call correct_u_amp(u1, amp_prev, amp, Imax, Jmax)
+      call correct_amp(u1,v1,w1,amp_prev, amp, Imax, Jmax)
       call calc_amp(u1,v1,w1,amp_prev, Imax, Jmax)
       write(*,*) "amp_new", amp_prev
 
@@ -117,7 +117,7 @@
       stop
 1     write(*,*)'  File ',fncp,' already exists'
       stop
-      end
+      end program init
 *
       subroutine gradp(u,v,w,p,Imax,Jmax)
       implicit real*8 (a-h,o-z)
@@ -203,37 +203,42 @@
       end
 *
       subroutine calc_amp(u,v,w, amp, Imax, Jmax)
-      implicit real*8 (a-h,o-z)
-      dimension
+        implicit real*8 (a-h,o-z)
+        dimension
      > u(0:Imax,0:Jmax,0:*)
      >,v(0:Imax,0:Jmax,0:*)
      >,w(0:Imax,0:Jmax,0:*)
-      common
+       common
      >/dimx/hx,Im,lx
      >/dimr/rt(0:128),rt1(0:128),yt(129),yt1(129),hr,Jm
      >/dimt/ht,Km,lt
-      amp = 0.d0
-      do j=1,Jm
-        u0=0.
-        do k=1,Km
-          do i=1,Im
-            u0 = u0 + u(i,j,k)
+        amp = 0.d0
+        Ss = 0.d0
+        do j=1,Jm
+          u0=0.
+          Ss=Ss+yt(j)*yt1(j)
+          do k=1,Km
+            do i=1,Im
+              u0 = u0 + u(i,j,k)
+            end do
+          end do
+          u0 = u0/(Im*Km)
+          do k = 1, Km
+            do i = 1, Im
+              amp = amp + 
+     >          ((u(i,j,k)-u0)**2+w(i,j,k)**2+v(i,j,k)**2)*yt(j)*yt1(j)
+            end do
           end do
         end do
-        u0 = u0/(Im*Km)
-        do k = 1, Km
-          do i = 1, Im
-            amp = amp + (u(i,j,k) - u0)**(2)
-          end do
-        end do
-      end do
-      amp = sqrt(amp/(Im*Jm*Km))
-      end
+        amp = sqrt(amp/(Im*Ss*Km))
+        end
 *
-      subroutine correct_u_amp(u, amp_prev, amp_cur, Imax, Jmax)
+      subroutine correct_amp(u,v,w, amp_prev, amp_cur, Imax, Jmax)
       implicit real*8 (a-h,o-z)
       dimension
-     > u(0:Imax,0:Jmax,0:*)
+     > u(0:Imax,0:Jmax,0:*),
+     > v(0:Imax,0:Jmax,0:*),
+     > w(0:Imax,0:Jmax,0:*)
       common
      >/dimx/hx,Im,lx
      >/dimr/rt(0:128),rt1(0:128),yt(129),yt1(129),hr,Jm
@@ -251,6 +256,8 @@
             do i = 1, Im
               d = u(i,j,k) - u0
               u(i,j,k) = u0 + c * d
+              v(i,j,k) = c * v(i,j,k)
+              w(i,j,k) = c * w(i,j,k)
             end do
           end do
         end do
